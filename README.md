@@ -3,7 +3,6 @@
 ## Estrutura de Pastas
 
 ```
-/
 ├── index.html      ← Página principal (Vue 3 via CDN)     
 └── assets/
     ├── styles.css  ← Estilos
