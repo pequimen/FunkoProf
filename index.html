@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FunkoProf — Coleção Exclusiva de Professores</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- ── NAV ── -->
+    <nav class="navbar">
+      <div class="nav-inner">
+        <div class="nav-logo">
+          <span class="logo-pop">FUNKO</span><span class="logo-prof">PROF</span>
+          <span class="logo-tag">® Coleção Exclusiva</span>
+        </div>
+        <div class="nav-right">
+          <button class="nav-admin-btn" @click="toggleAdmin">
+            ⚙️ <span>Admin</span>
+          </button>
+          <div class="cart-bubble" @click="showCart = !showCart">
+            🛒
+            <span class="cart-count" v-if="cart.length > 0">{{ cart.length }}</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ── Painel do Admin ── -->
+    <transition name="slide-down">
+      <div class="admin-panel" v-if="adminOpen">
+        <div class="admin-inner">
+          <h3>⚙️ Painel de Estoque — Admin</h3>
+          <div class="admin-grid">
+            <div class="admin-row" v-for="variant in variants" :key="variant.id">
+              <div class="admin-info">
+                <span class="admin-dot" :style="{ background: variant.accentColor }"></span>
+                <strong>{{ variant.name }}</strong>
+              </div>
+              <div class="admin-controls">
+                <button class="stock-btn minus" @click="decreaseStock(variant)" :disabled="variant.stock === 0">−</button>
+                <span class="stock-val" :class="stockClass(variant.stock)">{{ variant.stock }}</span>
+                <button class="stock-btn plus" @click="increaseStock(variant)">+</button>
+              </div>
+              <span class="stock-label" :class="stockClass(variant.stock)">
+                {{ stockText(variant.stock) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ── Carrinho de Compras ── -->
+    <transition name="slide-right">
+      <div class="cart-drawer" v-if="showCart">
+        <div class="drawer-header">
+          <h3>🛒 Seu Carrinho</h3>
+          <button class="close-btn" @click="showCart = false">✕</button>
+        </div>
+        <div class="drawer-body">
+          <div v-if="cart.length === 0" class="empty-cart">
+            <p>Seu carrinho está vazio.</p>
+            <span>Adicione um Funko para começar! 🎉</span>
+          </div>
+          <div class="cart-item" v-for="(item, idx) in cart" :key="idx">
+            <div class="ci-img-wrap">
+              <img :src="item.image" :alt="item.name" />
+            </div>
+            <div class="ci-info">
+              <strong>{{ item.name }}</strong>
+              <span>FunkoProf #{{ item.id.toString().padStart(3,'0') }}</span>
+            </div>
+            <button class="ci-remove" @click="removeFromCart(idx)">✕</button>
+          </div>
+        </div>
+        <div class="drawer-footer" v-if="cart.length > 0">
+          <div class="cart-total">
+            <span>Total</span>
+            <strong>{{ cart.length }} {{ cart.length === 1 ? 'item' : 'itens' }}</strong>
+          </div>
+          <button class="checkout-btn" @click="goToCheckout">
+            Finalizar Compra →
+          </button>
+        </div>
+      </div>
+    </transition>
+    <div class="drawer-overlay" v-if="showCart" @click="showCart = false"></div>
+
+    <!-- ── Professores (deixei Hero para ficar mais facil kk nosso herois rsrs) ── -->
+    <section class="hero">
+      <div class="hero-content">
+        <p class="hero-eyebrow">Edição Limitada • 2025</p>
+        <h1 class="hero-title">Coleção<br /><em>Professores</em></h1>
+        <p class="hero-sub">Funkos exclusivos dos melhores professores!<br />Qual é o seu favorito?</p>
+      </div>
+      <div class="hero-deco">
+        <div class="deco-ring r1"></div>
+        <div class="deco-ring r2"></div>
+        <div class="deco-ring r3"></div>
+      </div>
+    </section>
+
+    <!-- ── Produtos ── -->
+    <main class="product-section">
+      <div class="product-grid">
+
+        <!-- Imagem 3D -->
+        <div class="product-image-col">
+          <div class="image-frame" :style="{ borderColor: selectedVariant.accentColor }">
+            <div class="image-glow" :style="{ background: selectedVariant.accentColor + '33' }"></div>
+            <img
+              :src="selectedVariant.image"
+              :alt="selectedVariant.name"
+              :class="{ 'img-oos': selectedVariant.stock < 1 }"
+              class="main-img"
+            />
+            <div class="oos-overlay" v-if="selectedVariant.stock < 1">
+              <span>ESGOTADO</span>
+            </div>
+            <div class="edition-badge" :style="{ background: selectedVariant.accentColor }">
+              #{{ selectedVariant.id.toString().padStart(3, '0') }}
+            </div>
+            <transition name="fade">
+              <div class="preview-badge" v-if="hoverVariant && hoverVariant !== committedVariant.id">
+                👁 Pré-visualizando
+              </div>
+            </transition>
+          </div>
+
+          <!-- Indicador do estoque -->
+          <div class="stock-bar-wrap">
+            <div class="stock-bar-label">
+              <span>Estoque:</span>
+              <span :class="stockClass(selectedVariant.stock)">{{ stockText(selectedVariant.stock) }}</span>
+            </div>
+            <div class="stock-bar-track">
+              <div class="stock-bar-fill"
+                :style="{
+                  width: Math.min(selectedVariant.stock / 10 * 100, 100) + '%',
+                  background: selectedVariant.accentColor
+                }">
+              </div>
+            </div>
+            <p class="stock-count" v-if="selectedVariant.stock > 0">
+              {{ selectedVariant.stock }} unidades disponíveis
+            </p>
+            <p class="stock-count red" v-else>Sem unidades disponíveis</p>
+          </div>
+        </div>
+
+        <!-- Informação -->
+        <div class="product-info-col">
+          <p class="product-eyebrow">FunkoProf® Série Professores</p>
+          <h2 class="product-name">{{ selectedVariant.name }}</h2>
+          <p class="product-discipline">{{ selectedVariant.discipline }}</p>
+
+          <p class="product-desc">{{ selectedVariant.description }}</p>
+
+          <!-- Detalhes -->
+          <ul class="details-list">
+            <li v-for="detail in details" :key="detail">
+              <span class="detail-dot" :style="{ background: selectedVariant.accentColor }"></span>
+              {{ detail }}
+            </li>
+          </ul>
+
+          <!-- Variant -->
+          <div class="variant-section">
+            <p class="variant-label">Escolha o Professor:</p>
+            <div class="variant-grid">
+              <div
+                v-for="variant in variants"
+                :key="variant.id"
+                class="variant-card"
+                :class="{
+                  'variant-selected': committedVariant.id === variant.id,
+                  'variant-hovering': hoverVariant === variant.id,
+                  'variant-oos': variant.stock < 1
+                }"
+                :style="{
+                  '--accent': variant.accentColor,
+                  borderColor: committedVariant.id === variant.id ? variant.accentColor : (hoverVariant === variant.id ? variant.accentColor + '88' : '')
+                }"
+                @click="selectVariant(variant)"
+                @mouseover="previewVariant(variant)"
+                @mouseleave="restoreVariant()"
+              >
+                <div class="vc-img">
+                  <img :src="variant.image" :alt="variant.name" />
+                  <div class="vc-oos-badge" v-if="variant.stock < 1">Out</div>
+                </div>
+                <div class="vc-info">
+                  <strong>{{ variant.name.split(' ').slice(1).join(' ') }}</strong>
+                  <span :class="stockClass(variant.stock)" class="vc-stock">{{ stockText(variant.stock) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notificação do carrinho -->
+          <transition name="toast-anim">
+            <div class="toast" v-if="toast.show" :class="toast.type">
+              {{ toast.message }}
+            </div>
+          </transition>
+
+          <!-- Add ao carrinho -->
+          <div class="action-row">
+            <button
+              class="add-btn"
+              :class="{ 'add-btn-disabled': selectedVariant.stock < 1 }"
+              :disabled="selectedVariant.stock < 1"
+              :style="selectedVariant.stock > 0 ? { background: selectedVariant.accentColor } : {}"
+              @click="addToCart"
+            >
+              <span v-if="selectedVariant.stock > 0">🛒 Adicionar ao Carrinho</span>
+              <span v-else>😔 Esgotado</span>
+            </button>
+            <button class="view-cart-btn" @click="showCart = true" v-if="cart.length > 0">
+              Ver Carrinho ({{ cart.length }})
+            </button>
+          </div>
+
+          <!-- Máximo de itens disponiveis -->
+          <transition name="fade">
+            <div class="max-alert" v-if="maxReached">
+              ⚠️ Você atingiu o limite de unidades disponíveis para este Funko!
+            </div>
+          </transition>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- ──  Grid de todos os personagens no final ── -->
+    <section class="collection-section">
+      <div class="section-header">
+        <h2>A Coleção Completa</h2>
+        <p>Todos os 7 professores disponíveis nesta edição exclusiva</p>
+      </div>
+      <div class="collection-grid">
+        <div
+          class="coll-card"
+          v-for="variant in variants"
+          :key="variant.id"
+          :class="{ 'coll-oos': variant.stock < 1 }"
+          @click="selectAndScroll(variant)"
+        >
+          <div class="coll-img-wrap" :style="{ borderColor: variant.accentColor }">
+            <img :src="variant.image" :alt="variant.name" />
+          </div>
+          <div class="coll-info">
+            <strong>{{ variant.name }}</strong>
+            <span class="coll-disc">{{ variant.discipline }}</span>
+            <span class="coll-stock" :class="stockClass(variant.stock)">
+              {{ stockText(variant.stock) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FOOTER ── -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <span class="logo-pop">FUNKO</span><span class="logo-prof">PROF</span>
+        </div>
+        <p>© 2025 FunkoProf® — Eduardo Francener </p>
+      </div>
+    </footer>
+
+    <!-- ── CHECKOUT PAGE ── -->
+    <transition name="checkout-slide">
+      <div class="checkout-page" v-if="checkoutOpen">
+        <div class="checkout-inner">
+          <button class="back-btn" @click="checkoutOpen = false">← Voltar</button>
+          <div class="checkout-hero">
+            <h1>🎉 Finalizar Pedido</h1>
+            <p>Revise seus itens antes de confirmar</p>
+          </div>
+
+          <div class="checkout-items">
+            <div class="co-item" v-for="(item, idx) in cart" :key="idx">
+              <img :src="item.image" :alt="item.name" />
+              <div class="co-item-info">
+                <strong>{{ item.name }}</strong>
+                <span>FunkoProf® Edição Limitada</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="checkout-summary">
+            <div class="summary-row">
+              <span>Total de itens</span>
+              <strong>{{ cart.length }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Frete</span>
+              <strong class="green">Grátis 🎁</strong>
+            </div>
+          </div>
+
+          <div class="checkout-form-note">
+            <p>🚀 Este é um projeto acadêmico Vue.js. Em um e-commerce real, aqui ficaria o formulário de endereço e pagamento.</p>
+          </div>
+
+          <button class="confirm-btn" @click="confirmOrder">
+            ✅ Confirmar Pedido
+          </button>
+
+          <transition name="fade">
+            <div class="order-confirmed" v-if="orderConfirmed">
+              <div class="oc-inner">
+                <h2>🎊 Pedido Confirmado!</h2>
+                <p>Seu Funko está a caminho. Obrigado por sua compra!</p>
+                <button @click="resetAll">Voltar à Loja</button>
+              </div>
+            </div>
+          </transition>
+        </div>
+      </div>
+    </transition>
+
+  </div><!-- #app -->
+
+  <script>
+    const { createApp, ref, computed, watch } = Vue;
+
+    const PLACEHOLDER = "assets/images/placeholder.png";
+
+    // Helper to build image path — swap for real PNGs later (remove .svg when you add real images)
+    const img = name => `assets/images/funko-${name.toLowerCase()}.png`;
+
+    createApp({
+      setup() {
+        // ── DATA ──────────────────────────────────────────────
+        const variants = ref([
+          {
+            id: 1,
+            name: "Prof. André",
+            discipline: "Desenvolvimento Web",
+            accentColor: "#4f46e5",
+            image: img("andre"),
+            description: "Tags HTML e Arrow Functions são sua segunda língua. DevTools sempre aberto, caneca cheia de café do lado do teclado.",
+            stock: 8
+          },
+          {
+            id: 2,
+            name: "Prof. Adamo",
+            discipline: "Redes sem Fio",
+            accentColor: "#0891b2",
+            image: img("adamo"),
+            description: "Espectro de Canais e decibéis são sua segunda língua. Analisador de espectro sempre aberto, caçando interferência no ambiente.",
+            stock: 3
+          },
+          {
+            id: 3,
+            name: "Prof. Kennedy",
+            discipline: "Programação",
+            accentColor: "#dc2626",
+            image: img("kennedy"),
+            description: "Código limpo, café forte e na sua máquina todo código funciona! Descomplicando o entendimento dos alunos nos códigos da vida",
+            stock: 0
+          },
+          {
+            id: 4,
+            name: "Prof. Márcio",
+            discipline: "Gerência de projetos",
+            accentColor: "#16a34a",
+            image: img("marcio"),
+            description: "Padrões de projeto elevados. Scrum e Kanban são seu estilo de vida. Sempre projetando algo novo para galera! Esse é o cara pálida!",
+            stock: 1
+          },
+          {
+            id: 5,
+            name: "Prof. Moissa",
+            discipline: "Redes de Computadores",
+            accentColor: "#9333ea",
+            image: img("moissa"),
+            description: "VLANs e tabelas de roteamento são sua segunda língua. Console sempre aberto, cabo de rede azul pendurado no pescoço.",
+            stock: 5
+          },
+          {
+            id: 6,
+            name: "Prof. Reghelin",
+            discipline: "Arquitetura de Computadores",
+            accentColor: "#ea580c",
+            image: img("reghelin"),
+            description: "Portas lógicas e Assembly são sua segunda língua. Diagramas de circuito na mesa, cheio de 0 e 1 no ar.",
+            stock: 10
+          },
+          {
+            id: 7,
+            name: "Prof. Maico",
+            discipline: "Segurança da Informação",
+            accentColor: "#be185d",
+            image: img("maico"),
+            description: "Gráficos de Gantt e escopo são sua segunda língua. Quadro Kanban sempre atualizado, cronômetro na mão para a reunião diária",
+            stock: 2
+          }
+        ]);
+
+        const details = [
+          'Material: Vinil premium importado',
+          'Altura: 9,5 cm — tamanho padrão Pop!',
+          'Janela display box exclusiva FunkoProf',
+          'Certificado de autenticidade incluso',
+          'Edição limitada — apenas esta temporada'
+        ];
+
+        // ── STATE ─────────────────────────────────────────────
+        const selectedVariant  = ref(variants.value[0]);
+        const committedVariant = ref(variants.value[0]);
+        const hoverVariant     = ref(null);
+        const cart            = ref([]);
+        const showCart        = ref(false);
+        const adminOpen       = ref(false);
+        const maxReached      = ref(false);
+        const checkoutOpen    = ref(false);
+        const orderConfirmed  = ref(false);
+        const toast           = ref({ show: false, message: '', type: 'success' });
+
+        // ── METHODS ───────────────────────────────────────────
+        // Click → commit + display
+        const selectVariant = (variant) => {
+          committedVariant.value = variant;
+          selectedVariant.value  = variant;
+          maxReached.value = false;
+        };
+
+        // Hover → preview without committing
+        let restoreTimer = null;
+        const previewVariant = (variant) => {
+          clearTimeout(restoreTimer);
+          hoverVariant.value    = variant.id;
+          selectedVariant.value = variant;
+        };
+
+        // Mouse leave → restaura committed, mas só após 80ms
+        // (se o mouse entrar em outro card antes, o timer é cancelado)
+        const restoreVariant = () => {
+          restoreTimer = setTimeout(() => {
+            hoverVariant.value    = null;
+            selectedVariant.value = committedVariant.value;
+          }, 150);
+        };
+
+        const selectAndScroll = (variant) => {
+          selectVariant(variant);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        const showToast = (message, type = 'success') => {
+          toast.value = { show: true, message, type };
+          setTimeout(() => { toast.value.show = false; }, 3000);
+        };
+
+        const addToCart = () => {
+          const sv = selectedVariant.value;
+          if (sv.stock < 1) return;
+
+          // Count how many of this variant are in the cart
+          const inCart = cart.value.filter(i => i.id === sv.id).length;
+
+          if (inCart >= sv.stock) {
+            maxReached.value = true;
+            showToast(`Máximo de unidades do ${sv.name} atingido!`, 'warn');
+            return;
+          }
+
+          cart.value.push({ ...sv });
+          maxReached.value = false;
+          showToast(`${sv.name} adicionado ao carrinho! 🎉`);
+        };
+
+        const removeFromCart = (idx) => {
+          cart.value.splice(idx, 1);
+          maxReached.value = false;
+        };
+
+        const toggleAdmin = () => { adminOpen.value = !adminOpen.value; };
+
+        const increaseStock = (variant) => { variant.stock += 1; };
+        const decreaseStock = (variant) => {
+          if (variant.stock > 0) variant.stock -= 1;
+        };
+
+        const stockText = (stock) => {
+          if (stock < 1)  return 'Esgotado';
+          if (stock < 4)  return 'Últimas unidades';
+          if (stock < 8)  return 'Em estoque';
+          return 'Disponível';
+        };
+
+        const stockClass = (stock) => {
+          if (stock < 1)  return 'red';
+          if (stock < 4)  return 'orange';
+          return 'green';
+        };
+
+        const goToCheckout = () => {
+          showCart.value = false;
+          checkoutOpen.value = true;
+        };
+
+        const confirmOrder = () => {
+          // Deduct stock for each item sold
+          cart.value.forEach(item => {
+            const v = variants.value.find(v => v.id === item.id);
+            if (v && v.stock > 0) v.stock -= 1;
+          });
+          orderConfirmed.value = true;
+        };
+
+        const resetAll = () => {
+          cart.value = [];
+          orderConfirmed.value = false;
+          checkoutOpen.value = false;
+        };
+
+        return {
+          variants, details, selectedVariant, committedVariant, hoverVariant,
+          cart, showCart, adminOpen, maxReached, checkoutOpen, orderConfirmed, toast,
+          selectVariant, previewVariant, restoreVariant, selectAndScroll,
+          addToCart, removeFromCart,
+          toggleAdmin, increaseStock, decreaseStock,
+          stockText, stockClass,
+          goToCheckout, confirmOrder, resetAll
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
