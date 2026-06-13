@@ -21,9 +21,13 @@
 ## Funcionalidades Vue 3 implementadas
 
 | Bind CDN | `:src`, `:class`, `:style`, `:disabled` | Imagem, variantes, botões |
+
 | Condicionais | `v-if`, `v-else-if`, `v-else` | Estoque, overlay, toast |
+
 | Renderização de listas | `v-for` | Variantes, carrinho, detalhes, coleção |
+
 | Eventos manuais | `@click`, `@mouseover`, `@mouseleave` | Botões, variantes |
+
 | Estilos condicionais | `:class`, `:style` com expressões | Cores dinâmicas, disabled, status |
 
 ## Funcionalidades extras
