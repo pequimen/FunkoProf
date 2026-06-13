@@ -72,7 +72,7 @@
             <p>Seu carrinho está vazio.</p>
             <span>Adicione um Funko para começar! 🎉</span>
           </div>
-          <div class="cart-item" v-for="(item, idx) in cart" :key="idx">
+          <div class="cart-item" v-for="item in cartGrouped" :key="item.id">
             <div class="ci-img-wrap">
               <img :src="item.image" :alt="item.name" />
             </div>
@@ -80,7 +80,10 @@
               <strong>{{ item.name }}</strong>
               <span>FunkoProf #{{ item.id.toString().padStart(3,'0') }}</span>
             </div>
-            <button class="ci-remove" @click="removeFromCart(idx)">✕</button>
+            <div class="ci-qty">
+              <span v-if="item.qty > 1" class="qty-badge">× {{ item.qty }}</span>
+            </div>
+            <button class="ci-remove" @click="removeGroupFromCart(item.id)">✕</button>
           </div>
         </div>
         <div class="drawer-footer" v-if="cart.length > 0">
@@ -96,7 +99,7 @@
     </transition>
     <div class="drawer-overlay" v-if="showCart" @click="showCart = false"></div>
 
-    <!-- ── Professores  ── -->
+    <!-- ── Professores ── -->
     <section class="hero">
       <div class="hero-content">
         <p class="hero-eyebrow">Edição Limitada • 2026</p>
@@ -111,7 +114,7 @@
     </section>
 
     <!-- ── Produtos ── -->
-    <main class="product-section">
+    <main class="product-section" id="product-section">
       <div class="product-grid">
 
         <!-- Imagem 3D -->
@@ -231,7 +234,7 @@
             </button>
           </div>
 
-          <!-- Máximo de itens disponiveis -->
+          <!-- Máximo de itens disponíveis -->
           <transition name="fade">
             <div class="max-alert" v-if="maxReached">
               ⚠️ Você atingiu o limite de unidades disponíveis para este Funko!
@@ -242,7 +245,7 @@
       </div>
     </main>
 
-    <!-- ──  Grid de todos os personagens no final ── -->
+    <!-- ── Grid de todos os personagens no final ── -->
     <section class="collection-section">
       <div class="section-header">
         <h2>A Coleção Completa</h2>
@@ -276,7 +279,7 @@
         <div class="footer-logo">
           <span class="logo-pop">FUNKO</span><span class="logo-prof">PROF</span>
         </div>
-        <p>© 2026 FunkoProf® — Eduardo Francener </p>
+        <p>© 2026 FunkoProf® — Eduardo Francener</p>
       </div>
     </footer>
 
@@ -291,11 +294,14 @@
           </div>
 
           <div class="checkout-items">
-            <div class="co-item" v-for="(item, idx) in cart" :key="idx">
+            <div class="co-item" v-for="item in cartGrouped" :key="item.id">
               <img :src="item.image" :alt="item.name" />
               <div class="co-item-info">
                 <strong>{{ item.name }}</strong>
                 <span>FunkoProf® Edição Limitada</span>
+              </div>
+              <div class="ci-qty" v-if="item.qty > 1">
+                <span class="qty-badge">× {{ item.qty }}</span>
               </div>
             </div>
           </div>
@@ -335,11 +341,8 @@
   </div><!-- #app -->
 
   <script>
-    const { createApp, ref, computed, watch } = Vue;
+    const { createApp, ref, computed } = Vue;
 
-    const PLACEHOLDER = "assets/images/placeholder.png";
-
-    // Helper to build image path — swap for real PNGs later (remove .svg when you add real images)
     const img = name => `assets/images/funko-${name.toLowerCase()}.png`;
 
     createApp({
@@ -370,13 +373,13 @@
             discipline: "Programação",
             accentColor: "#dc2626",
             image: img("kennedy"),
-            description: "Código limpo, café forte e na sua máquina todo código funciona! Descomplicando o entendimento dos alunos nos códigos da vida",
+            description: "Código limpo, café forte e na sua máquina todo código funciona! Descomplicando o entendimento dos alunos nos códigos da vida.",
             stock: 0
           },
           {
             id: 4,
             name: "Prof. Márcio",
-            discipline: "Gerência de projetos",
+            discipline: "Gerência de Projetos",
             accentColor: "#16a34a",
             image: img("marcio"),
             description: "Padrões de projeto elevados. Scrum e Kanban são seu estilo de vida. Sempre projetando algo novo para galera! Esse é o cara pálida!",
@@ -406,7 +409,7 @@
             discipline: "Segurança da Informação",
             accentColor: "#be185d",
             image: img("maico"),
-            description: "Gráficos de Gantt e escopo são sua segunda língua. Quadro Kanban sempre atualizado, cronômetro na mão para a reunião diária",
+            description: "Gráficos de Gantt e escopo são sua segunda língua. Quadro Kanban sempre atualizado, cronômetro na mão para a reunião diária.",
             stock: 2
           }
         ]);
@@ -423,16 +426,26 @@
         const selectedVariant  = ref(variants.value[0]);
         const committedVariant = ref(variants.value[0]);
         const hoverVariant     = ref(null);
-        const cart            = ref([]);
-        const showCart        = ref(false);
-        const adminOpen       = ref(false);
-        const maxReached      = ref(false);
-        const checkoutOpen    = ref(false);
-        const orderConfirmed  = ref(false);
-        const toast           = ref({ show: false, message: '', type: 'success' });
+        const cart             = ref([]);
+        const showCart         = ref(false);
+        const adminOpen        = ref(false);
+        const maxReached       = ref(false);
+        const checkoutOpen     = ref(false);
+        const orderConfirmed   = ref(false);
+        const toast            = ref({ show: false, message: '', type: 'success' });
+
+        // ── COMPUTED ──────────────────────────────────────────
+        // Agrupa itens iguais no carrinho em vez de repetir
+        const cartGrouped = computed(() => {
+          const map = {};
+          cart.value.forEach(item => {
+            if (map[item.id]) map[item.id].qty++;
+            else map[item.id] = { ...item, qty: 1 };
+          });
+          return Object.values(map);
+        });
 
         // ── METHODS ───────────────────────────────────────────
-        // Click → commit + display
         const selectVariant = (variant) => {
           committedVariant.value = variant;
           selectedVariant.value  = variant;
@@ -447,8 +460,7 @@
           selectedVariant.value = variant;
         };
 
-        // Mouse leave → restaura committed, mas só após 80ms
-        // (se o mouse entrar em outro card antes, o timer é cancelado)
+        // Mouse leave → restaura committed após 150ms
         const restoreVariant = () => {
           restoreTimer = setTimeout(() => {
             hoverVariant.value    = null;
@@ -456,9 +468,22 @@
           }, 150);
         };
 
+        // Rola até a seção de compra (não o topo da página)
         const selectAndScroll = (variant) => {
           selectVariant(variant);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setTimeout(() => {
+            document.getElementById('product-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 50);
+        };
+
+        // Admin: abre e rola até o painel
+        const toggleAdmin = () => {
+          adminOpen.value = !adminOpen.value;
+          if (adminOpen.value) {
+            setTimeout(() => {
+              document.querySelector('.admin-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+          }
         };
 
         const showToast = (message, type = 'success') => {
@@ -470,9 +495,7 @@
           const sv = selectedVariant.value;
           if (sv.stock < 1) return;
 
-          // Count how many of this variant are in the cart
           const inCart = cart.value.filter(i => i.id === sv.id).length;
-
           if (inCart >= sv.stock) {
             maxReached.value = true;
             showToast(`Máximo de unidades do ${sv.name} atingido!`, 'warn');
@@ -489,7 +512,12 @@
           maxReached.value = false;
         };
 
-        const toggleAdmin = () => { adminOpen.value = !adminOpen.value; };
+        // Remove uma unidade do grupo (não todas de uma vez)
+        const removeGroupFromCart = (id) => {
+          const idx = cart.value.findLastIndex(i => i.id === id);
+          if (idx !== -1) cart.value.splice(idx, 1);
+          maxReached.value = false;
+        };
 
         const increaseStock = (variant) => { variant.stock += 1; };
         const decreaseStock = (variant) => {
@@ -497,15 +525,15 @@
         };
 
         const stockText = (stock) => {
-          if (stock < 1)  return 'Esgotado';
-          if (stock < 4)  return 'Últimas unidades';
-          if (stock < 8)  return 'Em estoque';
+          if (stock < 1) return 'Esgotado';
+          if (stock < 4) return 'Últimas unidades';
+          if (stock < 8) return 'Em estoque';
           return 'Disponível';
         };
 
         const stockClass = (stock) => {
-          if (stock < 1)  return 'red';
-          if (stock < 4)  return 'orange';
+          if (stock < 1) return 'red';
+          if (stock < 4) return 'orange';
           return 'green';
         };
 
@@ -515,7 +543,6 @@
         };
 
         const confirmOrder = () => {
-          // Deduct stock for each item sold
           cart.value.forEach(item => {
             const v = variants.value.find(v => v.id === item.id);
             if (v && v.stock > 0) v.stock -= 1;
@@ -530,10 +557,12 @@
         };
 
         return {
-          variants, details, selectedVariant, committedVariant, hoverVariant,
-          cart, showCart, adminOpen, maxReached, checkoutOpen, orderConfirmed, toast,
+          variants, details,
+          selectedVariant, committedVariant, hoverVariant,
+          cart, cartGrouped,
+          showCart, adminOpen, maxReached, checkoutOpen, orderConfirmed, toast,
           selectVariant, previewVariant, restoreVariant, selectAndScroll,
-          addToCart, removeFromCart,
+          addToCart, removeFromCart, removeGroupFromCart,
           toggleAdmin, increaseStock, decreaseStock,
           stockText, stockClass,
           goToCheckout, confirmOrder, resetAll
