@@ -9,15 +9,15 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/styles.css" />
 </head>
 
 <body>
   <div id="app">
 
-    <!-- ── NAV ── -->
-    <nav class="navbar">
+    <!-- ── NAV (transparente → sólida no scroll) ── -->
+    <nav class="navbar" :class="{ 'navbar-solid': scrolled }">
       <div class="nav-inner">
         <div class="nav-logo">
           <span class="logo-pop">FUNKO</span><span class="logo-prof">PROF</span>
@@ -34,6 +34,59 @@
         </div>
       </div>
     </nav>
+
+    <!-- ── HERO FULLSCREEN ── -->
+    <section class="hero-fullscreen">
+      <div class="hero-bg-overlay"></div>
+
+      <!-- Partículas decorativas -->
+      <div class="hero-particles">
+        <span v-for="n in 12" :key="n" class="particle" :style="particleStyle(n)"></span>
+      </div>
+
+      <div class="hero-center">
+        <p class="hero-eyebrow">✦ Edição Limitada • 2026 ✦</p>
+        <h1 class="hero-title">
+          <span class="title-line-1">Coleção</span>
+          <span class="title-line-2"><em>Professores</em></span>
+        </h1>
+        <p class="hero-sub">
+          Funkos exclusivos dos melhores professores.<br />
+          <span>Colecione. Presenteie. Eternize.</span>
+        </p>
+
+        <div class="hero-actions">
+          <button class="hero-cta" @click="scrollToProduct">
+            <span>Ver Coleção</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+          <div class="hero-stats">
+            <div class="stat">
+              <strong>7</strong><span>Professores</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <strong>Ed.</strong><span>Limitada</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <strong>9,5cm</strong><span>Vinil Pop!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Scroll indicator -->
+      <div class="scroll-indicator" @click="scrollToProduct">
+        <span class="scroll-text">ROLAR</span>
+        <div class="scroll-line">
+          <div class="scroll-dot"></div>
+        </div>
+      </div>
+    </section>
 
     <!-- ── Painel do Admin ── -->
     <transition name="slide-down">
@@ -99,25 +152,16 @@
     </transition>
     <div class="drawer-overlay" v-if="showCart" @click="showCart = false"></div>
 
-    <!-- ── Professores ── -->
-    <section class="hero">
-      <div class="hero-content">
-        <p class="hero-eyebrow">Edição Limitada • 2026</p>
-        <h1 class="hero-title">Coleção<br /><em>Professores</em></h1>
-        <p class="hero-sub">Funkos exclusivos dos melhores professores!<br />Qual é o seu favorito?</p>
-      </div>
-      <div class="hero-deco">
-        <div class="deco-ring r1"></div>
-        <div class="deco-ring r2"></div>
-        <div class="deco-ring r3"></div>
-      </div>
-    </section>
-
     <!-- ── Produtos ── -->
     <main class="product-section" id="product-section">
-      <div class="product-grid">
+      <div class="section-intro reveal">
+        <p class="section-eyebrow">✦ Escolha o seu</p>
+        <h2 class="section-title">A Coleção</h2>
+      </div>
 
-        <!-- Imagem 3D -->
+      <div class="product-grid reveal">
+
+        <!-- Imagem -->
         <div class="product-image-col">
           <div class="image-frame" :style="{ borderColor: selectedVariant.accentColor }">
             <div class="image-glow" :style="{ background: selectedVariant.accentColor + '33' }"></div>
@@ -140,7 +184,6 @@
             </transition>
           </div>
 
-          <!-- Indicador do estoque -->
           <div class="stock-bar-wrap">
             <div class="stock-bar-label">
               <span>Estoque:</span>
@@ -166,10 +209,8 @@
           <p class="product-eyebrow">FunkoProf® Série Professores</p>
           <h2 class="product-name">{{ selectedVariant.name }}</h2>
           <p class="product-discipline">{{ selectedVariant.discipline }}</p>
-
           <p class="product-desc">{{ selectedVariant.description }}</p>
 
-          <!-- Detalhes -->
           <ul class="details-list">
             <li v-for="detail in details" :key="detail">
               <span class="detail-dot" :style="{ background: selectedVariant.accentColor }"></span>
@@ -177,7 +218,6 @@
             </li>
           </ul>
 
-          <!-- Variant -->
           <div class="variant-section">
             <p class="variant-label">Escolha o Professor:</p>
             <div class="variant-grid">
@@ -210,14 +250,12 @@
             </div>
           </div>
 
-          <!-- Notificação do carrinho -->
           <transition name="toast-anim">
             <div class="toast" v-if="toast.show" :class="toast.type">
               {{ toast.message }}
             </div>
           </transition>
 
-          <!-- Add ao carrinho -->
           <div class="action-row">
             <button
               class="add-btn"
@@ -234,22 +272,21 @@
             </button>
           </div>
 
-          <!-- Máximo de itens disponíveis -->
           <transition name="fade">
             <div class="max-alert" v-if="maxReached">
               ⚠️ Você atingiu o limite de unidades disponíveis para este Funko!
             </div>
           </transition>
-
         </div>
       </div>
     </main>
 
-    <!-- ── Grid de todos os personagens no final ── -->
-    <section class="collection-section">
-      <div class="section-header">
-        <h2>A Coleção Completa</h2>
-        <p>Todos os 7 professores disponíveis nesta edição exclusiva</p>
+    <!-- ── Coleção Completa ── -->
+    <section class="collection-section reveal">
+      <div class="section-intro">
+        <p class="section-eyebrow">✦ Todos os professores</p>
+        <h2 class="section-title">Coleção Completa</h2>
+        <p class="section-sub">7 professores disponíveis nesta edição exclusiva</p>
       </div>
       <div class="collection-grid">
         <div
@@ -341,7 +378,7 @@
   </div><!-- #app -->
 
   <script>
-    const { createApp, ref, computed } = Vue;
+    const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
     const img = name => `assets/images/funko-${name.toLowerCase()}.png`;
 
@@ -349,69 +386,13 @@
       setup() {
         // ── DATA ──────────────────────────────────────────────
         const variants = ref([
-          {
-            id: 1,
-            name: "Prof. André",
-            discipline: "Desenvolvimento Web",
-            accentColor: "#4f46e5",
-            image: img("andre"),
-            description: "Tags HTML e Arrow Functions são sua segunda língua. DevTools sempre aberto, caneca cheia de café do lado do teclado.",
-            stock: 8
-          },
-          {
-            id: 2,
-            name: "Prof. Adamo",
-            discipline: "Redes sem Fio",
-            accentColor: "#0891b2",
-            image: img("adamo"),
-            description: "Espectro de Canais e decibéis são sua segunda língua. Analisador de espectro sempre aberto, caçando interferência no ambiente.",
-            stock: 3
-          },
-          {
-            id: 3,
-            name: "Prof. Kennedy",
-            discipline: "Programação",
-            accentColor: "#dc2626",
-            image: img("kennedy"),
-            description: "Código limpo, café forte e na sua máquina todo código funciona! Descomplicando o entendimento dos alunos nos códigos da vida.",
-            stock: 0
-          },
-          {
-            id: 4,
-            name: "Prof. Márcio",
-            discipline: "Gerência de Projetos",
-            accentColor: "#16a34a",
-            image: img("marcio"),
-            description: "Padrões de projeto elevados. Scrum e Kanban são seu estilo de vida. Sempre projetando algo novo para galera! Esse é o cara pálida!",
-            stock: 1
-          },
-          {
-            id: 5,
-            name: "Prof. Moissa",
-            discipline: "Redes de Computadores",
-            accentColor: "#9333ea",
-            image: img("moissa"),
-            description: "VLANs e tabelas de roteamento são sua segunda língua. Console sempre aberto, cabo de rede azul pendurado no pescoço.",
-            stock: 5
-          },
-          {
-            id: 6,
-            name: "Prof. Reghelin",
-            discipline: "Arquitetura de Computadores",
-            accentColor: "#ea580c",
-            image: img("reghelin"),
-            description: "Portas lógicas e Assembly são sua segunda língua. Diagramas de circuito na mesa, cheio de 0 e 1 no ar.",
-            stock: 10
-          },
-          {
-            id: 7,
-            name: "Prof. Maico",
-            discipline: "Segurança da Informação",
-            accentColor: "#be185d",
-            image: img("maico"),
-            description: "Gráficos de Gantt e escopo são sua segunda língua. Quadro Kanban sempre atualizado, cronômetro na mão para a reunião diária.",
-            stock: 2
-          }
+          { id: 1, name: "Prof. André",    discipline: "Desenvolvimento Web",      accentColor: "#4f46e5", image: img("andre"),    description: "Tags HTML e Arrow Functions são sua segunda língua. DevTools sempre aberto, caneca cheia de café do lado do teclado.", stock: 8 },
+          { id: 2, name: "Prof. Adamo",    discipline: "Redes sem Fio",            accentColor: "#0891b2", image: img("adamo"),    description: "Espectro de Canais e decibéis são sua segunda língua. Analisador de espectro sempre aberto, caçando interferência no ambiente.", stock: 3 },
+          { id: 3, name: "Prof. Kennedy",  discipline: "Programação",              accentColor: "#dc2626", image: img("kennedy"),  description: "Código limpo, café forte e na sua máquina todo código funciona! Descomplicando o entendimento dos alunos nos códigos da vida.", stock: 0 },
+          { id: 4, name: "Prof. Márcio",   discipline: "Gerência de Projetos",     accentColor: "#16a34a", image: img("marcio"),   description: "Padrões de projeto elevados. Scrum e Kanban são seu estilo de vida. Sempre projetando algo novo para galera!", stock: 1 },
+          { id: 5, name: "Prof. Moissa",   discipline: "Redes de Computadores",   accentColor: "#9333ea", image: img("moissa"),   description: "VLANs e tabelas de roteamento são sua segunda língua. Console sempre aberto, cabo de rede azul pendurado no pescoço.", stock: 5 },
+          { id: 6, name: "Prof. Reghelin", discipline: "Arquitetura de Computadores", accentColor: "#ea580c", image: img("reghelin"), description: "Portas lógicas e Assembly são sua segunda língua. Diagramas de circuito na mesa, cheio de 0 e 1 no ar.", stock: 10 },
+          { id: 7, name: "Prof. Maico",    discipline: "Segurança da Informação", accentColor: "#be185d", image: img("maico"),    description: "Gráficos de Gantt e escopo são sua segunda língua. Quadro Kanban sempre atualizado, cronômetro na mão para a reunião diária.", stock: 2 }
         ]);
 
         const details = [
@@ -433,9 +414,57 @@
         const checkoutOpen     = ref(false);
         const orderConfirmed   = ref(false);
         const toast            = ref({ show: false, message: '', type: 'success' });
+        const scrolled         = ref(false);
+
+        // ── SCROLL LISTENER ───────────────────────────────────
+        const onScroll = () => {
+          scrolled.value = window.scrollY > 60;
+
+          // Reveal on scroll
+          document.querySelectorAll('.reveal').forEach(el => {
+            const rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight * 0.88) {
+              el.classList.add('revealed');
+            }
+          });
+        };
+
+        onMounted(() => {
+          window.addEventListener('scroll', onScroll, { passive: true });
+          onScroll(); // run once on mount
+        });
+        onUnmounted(() => window.removeEventListener('scroll', onScroll));
+
+        // ── FAN / PARTICLE STYLES ─────────────────────────────
+        const fanStyle = (i) => {
+          const total = 7;
+          const spread = 56;
+          const angle = -spread / 2 + (spread / (total - 1)) * i;
+          const radius = 260;
+          const x = Math.sin(angle * Math.PI / 180) * radius;
+          const y = -Math.cos(angle * Math.PI / 180) * radius * 0.3;
+          const scale = i === 3 ? 1 : 0.72 - Math.abs(i - 3) * 0.04;
+          const zIndex = 10 - Math.abs(i - 3);
+          return {
+            transform: `translateX(${x}px) translateY(${y}px) rotate(${angle * 0.7}deg) scale(${scale})`,
+            zIndex,
+            opacity: 0.55 + scale * 0.45
+          };
+        };
+
+        const particleStyle = (n) => {
+          const seed = n * 137.508;
+          return {
+            left: ((seed * 13) % 100) + '%',
+            top:  ((seed * 7)  % 100) + '%',
+            width:  (4 + (n % 3) * 3) + 'px',
+            height: (4 + (n % 3) * 3) + 'px',
+            animationDelay: (n * 0.4) + 's',
+            animationDuration: (4 + (n % 4)) + 's'
+          };
+        };
 
         // ── COMPUTED ──────────────────────────────────────────
-        // Agrupa itens iguais no carrinho em vez de repetir
         const cartGrouped = computed(() => {
           const map = {};
           cart.value.forEach(item => {
@@ -446,13 +475,16 @@
         });
 
         // ── METHODS ───────────────────────────────────────────
+        const scrollToProduct = () => {
+          document.getElementById('product-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
         const selectVariant = (variant) => {
           committedVariant.value = variant;
           selectedVariant.value  = variant;
           maxReached.value = false;
         };
 
-        // Hover → preview without committing
         let restoreTimer = null;
         const previewVariant = (variant) => {
           clearTimeout(restoreTimer);
@@ -460,7 +492,6 @@
           selectedVariant.value = variant;
         };
 
-        // Mouse leave → restaura committed após 150ms
         const restoreVariant = () => {
           restoreTimer = setTimeout(() => {
             hoverVariant.value    = null;
@@ -468,7 +499,6 @@
           }, 150);
         };
 
-        // Rola até a seção de compra (não o topo da página)
         const selectAndScroll = (variant) => {
           selectVariant(variant);
           setTimeout(() => {
@@ -476,7 +506,6 @@
           }, 50);
         };
 
-        // Admin: abre e rola até o painel
         const toggleAdmin = () => {
           adminOpen.value = !adminOpen.value;
           if (adminOpen.value) {
@@ -494,25 +523,18 @@
         const addToCart = () => {
           const sv = selectedVariant.value;
           if (sv.stock < 1) return;
-
           const inCart = cart.value.filter(i => i.id === sv.id).length;
           if (inCart >= sv.stock) {
             maxReached.value = true;
             showToast(`Máximo de unidades do ${sv.name} atingido!`, 'warn');
             return;
           }
-
           cart.value.push({ ...sv });
           maxReached.value = false;
           showToast(`${sv.name} adicionado ao carrinho! 🎉`);
         };
 
-        const removeFromCart = (idx) => {
-          cart.value.splice(idx, 1);
-          maxReached.value = false;
-        };
-
-        // Remove uma unidade do grupo (não todas de uma vez)
+        const removeFromCart = (idx) => { cart.value.splice(idx, 1); maxReached.value = false; };
         const removeGroupFromCart = (id) => {
           const idx = cart.value.findLastIndex(i => i.id === id);
           if (idx !== -1) cart.value.splice(idx, 1);
@@ -520,9 +542,7 @@
         };
 
         const increaseStock = (variant) => { variant.stock += 1; };
-        const decreaseStock = (variant) => {
-          if (variant.stock > 0) variant.stock -= 1;
-        };
+        const decreaseStock = (variant) => { if (variant.stock > 0) variant.stock -= 1; };
 
         const stockText = (stock) => {
           if (stock < 1) return 'Esgotado';
@@ -530,18 +550,13 @@
           if (stock < 8) return 'Em estoque';
           return 'Disponível';
         };
-
         const stockClass = (stock) => {
           if (stock < 1) return 'red';
           if (stock < 4) return 'orange';
           return 'green';
         };
 
-        const goToCheckout = () => {
-          showCart.value = false;
-          checkoutOpen.value = true;
-        };
-
+        const goToCheckout = () => { showCart.value = false; checkoutOpen.value = true; };
         const confirmOrder = () => {
           cart.value.forEach(item => {
             const v = variants.value.find(v => v.id === item.id);
@@ -549,23 +564,20 @@
           });
           orderConfirmed.value = true;
         };
-
-        const resetAll = () => {
-          cart.value = [];
-          orderConfirmed.value = false;
-          checkoutOpen.value = false;
-        };
+        const resetAll = () => { cart.value = []; orderConfirmed.value = false; checkoutOpen.value = false; };
 
         return {
           variants, details,
           selectedVariant, committedVariant, hoverVariant,
           cart, cartGrouped,
           showCart, adminOpen, maxReached, checkoutOpen, orderConfirmed, toast,
-          selectVariant, previewVariant, restoreVariant, selectAndScroll,
+          scrolled,
+          selectVariant, previewVariant, restoreVariant, selectAndScroll, scrollToProduct,
           addToCart, removeFromCart, removeGroupFromCart,
           toggleAdmin, increaseStock, decreaseStock,
           stockText, stockClass,
-          goToCheckout, confirmOrder, resetAll
+          goToCheckout, confirmOrder, resetAll,
+          fanStyle, particleStyle
         };
       }
     }).mount('#app');
